@@ -5,13 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Caderno Online</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 50px; }
-        .notebook { background: #fff; width: 520px; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-left: 10px solid #3498db; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            /* ADICIONADO: Plano de fundo */
+            background-image: url("plano de fundo.png");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            
+            display: flex; 
+            justify-content: center; 
+            padding: 50px; 
+        }
+        
+        /* Opcional: Adicionei um pouco de transparência no caderno para o fundo aparecer levemente atrás */
+        .notebook { 
+            background: rgba(255, 255, 255, 0.95); 
+            width: 520px; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+            border-left: 10px solid #3498db; 
+        }
+        
         h2 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; margin-bottom: 10px; }
         button { border: none; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; padding: 10px 15px; border-radius: 5px; }
         .btn-add { background: #3498db; color: white; }
+        .btn-add:hover { background: #2980b9; }
         .btn-excel { background: transparent; padding: 0; margin-left: 10px; }
         .btn-excel img { width: 40px; height: 40px; }
         ul { list-style: none; padding: 0; }
@@ -60,12 +83,12 @@
         messagingSenderId: "627593358847",
         appId: "1:627593358847:web:a4d2071a9a54925cb90bca",
         measurementId: "G-6J5Y9NNHN7",
-        databaseURL: "https://meu-caderno-2a88f-default-rtdb.firebaseio.com/" // Link do seu novo banco
+        databaseURL: "https://meu-caderno-2a88f-default-rtdb.firebaseio.com/"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.database(); // Agora usamos Database em vez de Firestore
+    const db = firebase.database();
 
     function fazerLogin() {
         const email = document.getElementById('email').value;
