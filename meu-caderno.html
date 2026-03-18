@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Caderno de Tarefas</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 50px; }
+        .notebook { background: #fff; width: 520px; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-left: 10px solid #3498db; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
+        
+        button { border: none; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-add { background: #3498db; color: white; padding: 10px 15px; border-radius: 5px; }
+        .btn-add:hover { background: #2980b9; }
+        
+        /* Estilo do Botão Excel com sua logo */
+        .btn-excel { background: transparent; padding: 0; margin-left: 10px; }
+        .btn-excel img { width: 40px; height: 40px; transition: transform 0.2s; }
+        .btn-excel:hover img { transform: scale(1.1); }
+
+        ul { list-style: none; padding: 0; }
+        li { background: #f9f9f9; margin-bottom: 8px; padding: 12px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; transition: 0.2s; }
+        li:hover { background: #f1f1f1; }
+        
+        .task-info-container { flex-grow: 1; cursor: pointer; }
+        .data-info { font-size: 0.75em; color: #888; display: block; margin-top: 4px; }
+        .concluida .texto-tarefa { text-decoration: line-through; color: #bbb; }
+        
+        .actions { display: flex; align-items: center; gap: 15px; }
+        .check { font-size: 1.2em; cursor: pointer; }
+        
+        /* Estilo do Botão Lixeira com sua logo */
+        .btn-delete { background: transparent; padding: 0; }
+        .btn-delete img { width: 25px; height: 25px; transition: transform 0.2s; }
+        .btn-delete:hover img { transform: scale(1.2); filter: brightness(0.8); }
+    </style>
+</head>
+<body>
+
+<div class="notebook">
+    <h2>
+        Minhas Anotações
+        <button class="btn-excel" onclick="exportarExcel()" title="Download Excel">
+            <img src="logo excel.png" alt="Excel">
+        </button>
+    </h2>
+    
+    <div class="input-group">
+        <input type="text" id="novaTarefa" placeholder="O que vamos fazer hoje?">
+        <button class="btn-add" onclick="adicionarTarefa()">Anotar</button>
+    </div>
+
+    <ul id="listaTarefas"></ul>
+</div>
+
+<script>
+    function adicionarTarefa() {
+        const input = document.getElementById('novaTarefa');
+        const texto = input.value;
+        if (texto.trim() === "") return;
+
+        const agora = new Date();
+        const dataFormatada = agora.toLocaleDateString('pt-BR') + " " + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+        const lista = document.getElementById('listaTarefas');
+        const item = document.createElement('li');
+
+        item.innerHTML = `
+            <div class="task-info-container" onclick="alternarStatus(this.parentElement)">
+                <span class="texto-tarefa">${texto}</span>
+                <span class="data-info">📅 Criado em: ${dataFormatada}</span>
+            </div>
+            <div class="actions">
+                <span class="check" onclick="alternarStatus(this.parentElement.parentElement)">⬜</span>
+                <button class="btn-delete" onclick="removerTarefa(this.parentElement.parentElement)" title="Excluir">
+                    <img src="logo lixeira.png" alt="Excluir">
+                </button>
+            </div>
+        `;
+
+        lista.appendChild(item);
+        input.value = "";
+        input.focus();
+    }
+
+    function alternarStatus(elementoLi) {
+        elementoLi.classList.toggle('concluida');
+        const check = elementoLi.querySelector('.check');
+        check.innerHTML = elementoLi.classList.contains('concluida') ? '✅' : '⬜';
+    }
+
+    function removerTarefa(elementoLi) {
+        if(confirm("Deseja realmente excluir esta anotação?")) {
+            elementoLi.remove();
+        }
+    }
+
+    document.getElementById('novaTarefa').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') adicionarTarefa();
+    });
+
+    function exportarExcel() {
+        const tarefas = document.querySelectorAll('#listaTarefas li');
+        if (tarefas.length === 0) {
+            alert("Não há tarefas para exportar!");
+            return;
+        }
+
+        let csvConteudo = "Tarefa;Data de Criacao;Status\n"; 
+
+        tarefas.forEach(item => {
+            const texto = item.querySelector('.texto-tarefa').innerText;
+            const data = item.querySelector('.data-info').innerText.replace("📅 Criado em: ", "");
+            const status = item.classList.contains('concluida') ? "Concluida" : "Pendente";
+            csvConteudo += `${texto};${data};${status}\n`;
+        });
+
+        const blob = new Blob(["\ufeff" + csvConteudo], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", "meu_caderno_tarefas.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
