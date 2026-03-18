@@ -3,149 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Caderno de Tarefas</title>
+    <title>Meu Caderno Online</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 50px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding: 50px; }
         .notebook { background: #fff; width: 520px; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-left: 10px solid #3498db; }
         h2 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; }
-        button { border: none; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .btn-add { background: #3498db; color: white; padding: 10px 15px; border-radius: 5px; }
-        .btn-add:hover { background: #2980b9; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; outline: none; margin-bottom: 10px; }
+        button { border: none; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; padding: 10px 15px; border-radius: 5px; }
+        .btn-add { background: #3498db; color: white; }
         .btn-excel { background: transparent; padding: 0; margin-left: 10px; }
-        .btn-excel img { width: 40px; height: 40px; transition: transform 0.2s; }
-        .btn-excel:hover img { transform: scale(1.1); }
+        .btn-excel img { width: 40px; height: 40px; }
         ul { list-style: none; padding: 0; }
-        li { background: #f9f9f9; margin-bottom: 8px; padding: 12px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; transition: 0.2s; }
-        li:hover { background: #f1f1f1; }
+        li { background: #f9f9f9; margin-bottom: 8px; padding: 12px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }
         .task-info-container { flex-grow: 1; cursor: pointer; }
         .data-info { font-size: 0.75em; color: #888; display: block; margin-top: 4px; }
         .concluida .texto-tarefa { text-decoration: line-through; color: #bbb; }
-        .actions { display: flex; align-items: center; gap: 15px; }
-        .check { font-size: 1.2em; cursor: pointer; }
-        .btn-delete { background: transparent; padding: 0; }
-        .btn-delete img { width: 25px; height: 25px; transition: transform 0.2s; }
-        .btn-delete:hover img { transform: scale(1.2); filter: brightness(0.8); }
+        .hidden { display: none; }
+        .btn-delete img { width: 25px; height: 25px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="notebook">
+<div id="login-section" class="notebook">
+    <h2>Acesso ao Caderno</h2>
+    <input type="email" id="email" placeholder="Seu e-mail">
+    <input type="password" id="senha" placeholder="Sua senha">
+    <button class="btn-add" style="width: 100%;" onclick="fazerLogin()">Entrar / Cadastrar</button>
+</div>
+
+<div id="caderno-section" class="notebook hidden">
     <h2>
         Minhas Anotações
         <button class="btn-excel" onclick="exportarExcel()" title="Download Excel">
             <img src="logo excel.png" alt="Excel">
         </button>
     </h2>
-    
     <div class="input-group">
         <input type="text" id="novaTarefa" placeholder="O que vamos fazer hoje?">
         <button class="btn-add" onclick="adicionarTarefa()">Anotar</button>
     </div>
-
     <ul id="listaTarefas"></ul>
+    <button onclick="fazerSair()" style="background: #eee; width: 100%; margin-top: 20px;">Sair</button>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
 <script>
-    // 1. CARREGAR TAREFAS AO ABRIR O SITE
-    window.onload = function() {
-        const tarefasSalvas = JSON.parse(localStorage.getItem('tarefasCaderno')) || [];
-        tarefasSalvas.forEach(t => criarElementoTarefa(t.texto, t.data, t.concluida));
+    const firebaseConfig = {
+        apiKey: "AIzaSyAjhhF5nrx3O46wvnbh6CucvpcJy0WNITI",
+        authDomain: "meu-caderno-2a88f.firebaseapp.com",
+        projectId: "meu-caderno-2a88f",
+        storageBucket: "meu-caderno-2a88f.firebasestorage.app",
+        messagingSenderId: "627593358847",
+        appId: "1:627593358847:web:a4d2071a9a54925cb90bca",
+        measurementId: "G-6J5Y9NNHN7",
+        databaseURL: "https://meu-caderno-2a88f-default-rtdb.firebaseio.com/" // Link do seu novo banco
     };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database(); // Agora usamos Database em vez de Firestore
+
+    function fazerLogin() {
+        const email = document.getElementById('email').value;
+        const senha = document.getElementById('senha').value;
+        auth.signInWithEmailAndPassword(email, senha).catch(() => auth.createUserWithEmailAndPassword(email, senha));
+    }
+
+    function fazerSair() { auth.signOut(); }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('caderno-section').classList.remove('hidden');
+            carregarTarefas(user.uid);
+        } else {
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('caderno-section').classList.add('hidden');
+        }
+    });
 
     function adicionarTarefa() {
         const input = document.getElementById('novaTarefa');
-        const texto = input.value;
-        if (texto.trim() === "") return;
+        const user = auth.currentUser;
+        if (input.value.trim() === "") return;
 
-        const agora = new Date();
-        const dataFormatada = agora.toLocaleDateString('pt-BR') + " " + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-
-        criarElementoTarefa(texto, dataFormatada, false);
-        salvarNoLocalStorage(); // Salva a nova lista
-
+        db.ref('usuarios/' + user.uid + '/tarefas').push({
+            texto: input.value,
+            concluida: false,
+            data: new Date().toLocaleString('pt-BR')
+        });
         input.value = "";
-        input.focus();
     }
 
-    // Função para colocar a tarefa na tela
-    function criarElementoTarefa(texto, data, concluida) {
-        const lista = document.getElementById('listaTarefas');
-        const item = document.createElement('li');
-        if (concluida) item.classList.add('concluida');
-
-        item.innerHTML = `
-            <div class="task-info-container" onclick="alternarStatus(this.parentElement)">
-                <span class="texto-tarefa">${texto}</span>
-                <span class="data-info">📅 Criado em: ${data}</span>
-            </div>
-            <div class="actions">
-                <span class="check" onclick="alternarStatus(this.parentElement.parentElement)">${concluida ? '✅' : '⬜'}</span>
-                <button class="btn-delete" onclick="removerTarefa(this.parentElement.parentElement)" title="Excluir">
-                    <img src="logo lixeira.png" alt="Excluir">
-                </button>
-            </div>
-        `;
-
-        lista.appendChild(item);
-    }
-
-    function alternarStatus(elementoLi) {
-        elementoLi.classList.toggle('concluida');
-        const check = elementoLi.querySelector('.check');
-        check.innerHTML = elementoLi.classList.contains('concluida') ? '✅' : '⬜';
-        salvarNoLocalStorage(); // Atualiza o status no salvamento
-    }
-
-    function removerTarefa(elementoLi) {
-        if(confirm("Deseja realmente excluir esta anotação?")) {
-            elementoLi.remove();
-            salvarNoLocalStorage(); // Salva após remover
-        }
-    }
-
-    // 2. FUNÇÃO PARA SALVAR TUDO NO NAVEGADOR
-    function salvarNoLocalStorage() {
-        const tarefas = [];
-        document.querySelectorAll('#listaTarefas li').forEach(li => {
-            tarefas.push({
-                texto: li.querySelector('.texto-tarefa').innerText,
-                data: li.querySelector('.data-info').innerText.replace("📅 Criado em: ", ""),
-                concluida: li.classList.contains('concluida')
+    function carregarTarefas(uid) {
+        db.ref('usuarios/' + uid + '/tarefas').on('value', snapshot => {
+            const lista = document.getElementById('listaTarefas');
+            lista.innerHTML = "";
+            snapshot.forEach(childSnapshot => {
+                const id = childSnapshot.key;
+                const t = childSnapshot.val();
+                const item = document.createElement('li');
+                if (t.concluida) item.classList.add('concluida');
+                item.innerHTML = `
+                    <div class="task-info-container" onclick="toggleStatus('${id}', ${t.concluida})">
+                        <span class="texto-tarefa">${t.texto}</span>
+                        <span class="data-info">📅 ${t.data}</span>
+                    </div>
+                    <div class="actions">
+                        <span class="check" onclick="toggleStatus('${id}', ${t.concluida})">${t.concluida ? '✅' : '⬜'}</span>
+                        <button class="btn-delete" onclick="deletarTarefa('${id}')"><img src="logo lixeira.png"></button>
+                    </div>`;
+                lista.appendChild(item);
             });
         });
-        localStorage.setItem('tarefasCaderno', JSON.stringify(tarefas));
     }
 
-    document.getElementById('novaTarefa').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') adicionarTarefa();
-    });
+    function toggleStatus(id, status) {
+        db.ref('usuarios/' + auth.currentUser.uid + '/tarefas/' + id).update({ concluida: !status });
+    }
 
-    function exportarExcel() {
-        const tarefas = document.querySelectorAll('#listaTarefas li');
-        if (tarefas.length === 0) {
-            alert("Não há tarefas para exportar!");
-            return;
-        }
+    function deletarTarefa(id) {
+        if(confirm("Excluir?")) db.ref('usuarios/' + auth.currentUser.uid + '/tarefas/' + id).remove();
+    }
 
-        let csvConteudo = "Tarefa;Data de Criacao;Status\n"; 
-
-        tarefas.forEach(item => {
-            const texto = item.querySelector('.texto-tarefa').innerText;
-            const data = item.querySelector('.data-info').innerText.replace("📅 Criado em: ", "");
-            const status = item.classList.contains('concluida') ? "Concluida" : "Pendente";
-            csvConteudo += `${texto};${data};${status}\n`;
+    async function exportarExcel() {
+        const uid = auth.currentUser.uid;
+        db.ref('usuarios/' + uid + '/tarefas').once('value', snapshot => {
+            let csv = "Tarefa;Data;Status\n";
+            snapshot.forEach(child => {
+                const t = child.val();
+                csv += `${t.texto};${t.data};${t.concluida ? 'Concluida' : 'Pendente'}\n`;
+            });
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "meu_caderno.csv";
+            link.click();
         });
-
-        const blob = new Blob(["\ufeff" + csvConteudo], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "meu_caderno_tarefas.csv");
-        link.click();
     }
 </script>
-
 </body>
 </html>
